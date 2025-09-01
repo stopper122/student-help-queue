@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Help Queue</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .container-card {
+            max-width: 3xl;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-start justify-center min-h-screen p-6">
+
+    <!-- Main Application Container -->
+    <div class="container-card bg-white p-8 rounded-2xl shadow-xl space-y-8 mt-12">
+
+        <!-- Header -->
+        <header class="text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Student Help Queue</h1>
+            <p class="text-sm text-gray-500 mt-2">Enter your name and choose an option to get in line.</p>
+        </header>
+
+        <!-- User Input Section -->
+        <div id="user-input-section" class="space-y-4">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input id="firstNameInput" type="text" placeholder="First Name" class="flex-1 p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input id="lastNameInput" type="text" placeholder="Last Name" class="flex-1 p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button id="helpBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    Ask for Help
+                </button>
+                <button id="checkBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-green-300">
+                    Check Program
+                </button>
+            </div>
+        </div>
+
+        <!-- Student Queue Status Section -->
+        <div id="student-status-section" class="hidden text-center p-6 rounded-xl border-2 border-dashed border-blue-400 bg-blue-50 space-y-4">
+            <p class="text-xl text-blue-800 font-medium">You are currently <span id="queueNumber" class="text-3xl font-bold">--</span> in line.</p>
+            <p class="text-sm text-blue-600">The teacher will be with you shortly!</p>
+            <button id="cancelBtn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-full shadow-md transition-transform transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-red-300">
+                Cancel Request
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // UI Elements
+        const firstNameInput = document.getElementById('firstNameInput');
+        const lastNameInput = document.getElementById('lastNameInput');
+        const helpBtn = document.getElementById('helpBtn');
+        const checkBtn = document.getElementById('checkBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const userInputSection = document.getElementById('user-input-section');
+        const studentStatusSection = document.getElementById('student-status-section');
+        const queueNumberElement = document.getElementById('queueNumber');
+
+        // Initialize Firebase services
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+        let userHasRequest = false;
+        let userRequestId = null;
+
+        // Sign in anonymously to get a unique user ID
+        const signIn = async () => {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                userId = auth.currentUser.uid;
+                // Once authenticated, start listening for queue changes
+                listenForQueueChanges();
+            } catch (error) {
+                console.error("Error during authentication:", error);
+            }
+        };
+
+        // Listen to real-time updates from Firestore
+        const listenForQueueChanges = () => {
+            // Path to the shared public data collection
+            const queueCollectionRef = collection(db, `artifacts/${appId}/public/data/help-requests`);
+            
+            // Create a query to order the queue by submission time
+            const q = query(queueCollectionRef, orderBy("timestamp"));
+
+            // Use onSnapshot to get real-time updates
+            onSnapshot(q, (snapshot) => {
+                const queue = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    queue.push({ id: doc.id, ...data });
+                });
+
+                // Check if the current user has a request in the queue
+                const userRequest = queue.find(req => req.userId === userId);
+                if (userRequest) {
+                    userInputSection.classList.add('hidden');
+                    studentStatusSection.classList.remove('hidden');
+                    const userIndex = queue.findIndex(req => req.id === userRequest.id);
+                    queueNumberElement.textContent = userIndex + 1;
+                    userHasRequest = true;
+                    userRequestId = userRequest.id;
+                } else {
+                    userInputSection.classList.remove('hidden');
+                    studentStatusSection.classList.add('hidden');
+                    userHasRequest = false;
+                    userRequestId = null;
+                }
+            }, (error) => {
+                console.error("Error listening to queue changes:", error);
+            });
+        };
+
+        const submitRequest = async (type) => {
+            const firstName = firstNameInput.value.trim();
+            const lastName = lastNameInput.value.trim();
+
+            if (!firstName || !lastName || !userId) {
+                console.error("Please enter your first and last name.");
+                return;
+            }
+
+            if (userHasRequest) {
+                console.log("User already has an active request.");
+                return;
+            }
+            
+            try {
+                // Add a new document to the queue collection
+                const queueCollectionRef = collection(db, `artifacts/${appId}/public/data/help-requests`);
+                await addDoc(queueCollectionRef, {
+                    firstName,
+                    lastName,
+                    requestType: type,
+                    userId,
+                    timestamp: Date.now()
+                });
+                console.log("Request submitted successfully.");
+            } catch (error) {
+                console.error("Error adding document:", error);
+            }
+        };
+
+        const cancelRequest = async () => {
+            if (!userRequestId) {
+                console.error("No active request to cancel.");
+                return;
+            }
+
+            try {
+                // Delete the document from the queue
+                const docRef = doc(db, `artifacts/${appId}/public/data/help-requests`, userRequestId);
+                await deleteDoc(docRef);
+                console.log("Request canceled successfully.");
+            } catch (error) {
+                console.error("Error canceling request:", error);
+            }
+        };
+        
+        // Event Listeners
+        helpBtn.addEventListener('click', () => submitRequest('Help'));
+        checkBtn.addEventListener('click', () => submitRequest('Program Check'));
+        cancelBtn.addEventListener('click', cancelRequest);
+
+        // Start the app by signing in to Firebase
+        signIn();
+    </script>
+</body>
+</html>

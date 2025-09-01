@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .container-card {
+            max-width: 3xl;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-start justify-center min-h-screen p-6">
+
+    <!-- Main Application Container -->
+    <div class="container-card bg-white p-8 rounded-2xl shadow-xl space-y-8 mt-12">
+
+        <!-- Header -->
+        <header class="text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Teacher Dashboard</h1>
+            <p class="text-sm text-gray-500 mt-2">Manage the student help queue in real time.</p>
+        </header>
+
+        <!-- Teacher View Section -->
+        <div class="space-y-4">
+            <h2 class="text-2xl font-bold text-gray-700 text-center sm:text-left">Current Requests</h2>
+            <div id="teacher-view-queue" class="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <p id="empty-queue-message" class="text-gray-500 text-center italic">The queue is currently empty.</p>
+                <!-- Queue items will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // UI Elements
+        const teacherViewQueue = document.getElementById('teacher-view-queue');
+        const emptyQueueMessage = document.getElementById('empty-queue-message');
+
+        // Initialize Firebase services
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Sign in anonymously to get a unique user ID
+        const signIn = async () => {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                // Once authenticated, start listening for queue changes
+                listenForQueueChanges();
+            } catch (error) {
+                console.error("Error during authentication:", error);
+            }
+        };
+
+        // Listen to real-time updates from Firestore
+        const listenForQueueChanges = () => {
+            // Path to the shared public data collection
+            const queueCollectionRef = collection(db, `artifacts/${appId}/public/data/help-requests`);
+            
+            // Create a query to order the queue by submission time
+            const q = query(queueCollectionRef, orderBy("timestamp"));
+
+            // Use onSnapshot to get real-time updates
+            onSnapshot(q, (snapshot) => {
+                const queue = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    queue.push({ id: doc.id, ...data });
+                });
+                
+                // Update the teacher's view with the full queue
+                renderTeacherView(queue);
+            }, (error) => {
+                console.error("Error listening to queue changes:", error);
+            });
+        };
+
+        const renderTeacherView = (queue) => {
+            teacherViewQueue.innerHTML = ''; // Clear previous content
+            if (queue.length === 0) {
+                teacherViewQueue.appendChild(emptyQueueMessage);
+                emptyQueueMessage.classList.remove('hidden');
+            } else {
+                emptyQueueMessage.classList.add('hidden');
+                queue.forEach((item, index) => {
+                    const queueItem = document.createElement('div');
+                    queueItem.className = 'p-3 my-2 bg-white rounded-lg shadow-sm border border-gray-100 flex items-center justify-between';
+                    queueItem.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <span class="font-bold text-gray-700 text-lg">${index + 1}.</span>
+                            <div>
+                                <p class="font-semibold text-gray-800">${item.firstName} ${item.lastName}</p>
+                                <p class="text-sm text-gray-500">${item.requestType}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                          <button class="remove-request-btn bg-gray-200 text-gray-600 rounded-full h-8 w-8 flex items-center justify-center hover:bg-red-400 hover:text-white transition-colors duration-200" data-id="${item.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </button>
+                          <span class="text-xs text-gray-400 break-words w-20">User ID: ${item.userId}</span>
+                        </div>
+                    `;
+                    teacherViewQueue.appendChild(queueItem);
+                });
+            }
+        };
+
+        const removeRequest = async (docId) => {
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/help-requests`, docId);
+                await deleteDoc(docRef);
+                console.log("Request removed by teacher successfully.");
+            } catch (error) {
+                console.error("Error removing request:", error);
+            }
+        };
+        
+        // Event delegation for the teacher's remove buttons
+        teacherViewQueue.addEventListener('click', (e) => {
+            const btn = e.target.closest('.remove-request-btn');
+            if (btn) {
+                const docId = btn.dataset.id;
+                if (docId) {
+                    removeRequest(docId);
+                }
+            }
+        });
+
+        // Start the app by signing in to Firebase
+        signIn();
+    </script>
+</body>
+</html>
