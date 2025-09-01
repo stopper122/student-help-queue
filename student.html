@@ -105,10 +105,6 @@
 
         // Sign in anonymously to get a unique user ID
         const signIn = async () => {
-            if (firebaseConfig.projectId === "your-project-id") {
-                console.error("Firebase is not configured. Please add your Firebase project's config details to the firebaseConfig variable in the code and reload the page.");
-                return;
-            }
              try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
@@ -123,6 +119,10 @@
                 listenForQueueChanges();
             } catch (error) {
                 console.error("Error during authentication:", error);
+                // Additional instructions for the user to troubleshoot
+                console.warn(
+                    "If you are seeing a 'auth/configuration-not-found' error, please make sure you have enabled the 'Anonymous' provider in your Firebase Authentication settings."
+                );
             }
         };
 
