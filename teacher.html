@@ -10,30 +10,27 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        .container-card {
-            max-width: 3xl;
-            width: 100%;
-        }
     </style>
 </head>
 <body class="bg-slate-100 flex items-start justify-center min-h-screen p-6">
 
     <!-- Main Application Container -->
-    <div class="container-card bg-white p-8 rounded-2xl shadow-xl space-y-8 mt-12">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl mt-12">
 
         <!-- Header -->
-        <header class="text-center mb-6">
+        <header class="text-center mb-8">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Teacher Dashboard</h1>
-            <p class="text-sm text-gray-500 mt-2">All student requests appear here in real-time.</p>
+            <p class="text-sm text-gray-500 mt-2">Live queue of students needing assistance.</p>
         </header>
-        
-        <!-- Teacher Queue View -->
-        <div id="teacher-view-queue" class="space-y-4">
-            <!-- Requests will be dynamically added here -->
-            <div class="text-center p-6 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50">
-                <p class="text-gray-500">The queue is currently empty.</p>
+
+        <!-- Live Queue Section -->
+        <section id="teacher-view-section">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">Current Queue</h2>
+            <div id="teacher-view-queue" class="space-y-4">
+                <!-- Queue items will be rendered here dynamically -->
+                <p class="text-gray-500 text-center py-8" id="loading-message">Loading queue...</p>
             </div>
-        </div>
+        </section>
     </div>
 
     <!-- Firebase SDKs -->
@@ -41,7 +38,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
+
         // =========================================================================
         // IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION HERE
         // =========================================================================
@@ -57,7 +54,7 @@
         //   ...
         // };
         // =========================================================================
-        const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyBX96xDY5ThDAZn-SckmsnfynMnQjvUc2I",
   authDomain: "helprequest-469c0.firebaseapp.com",
   projectId: "helprequest-469c0",
@@ -65,37 +62,37 @@
   messagingSenderId: "1092775554304",
   appId: "1:1092775554304:web:e771c3ebac1e6ba4f597e5"
 };
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const initialAuthToken = null;
 
         // UI Elements
         const teacherViewQueue = document.getElementById('teacher-view-queue');
+        const loadingMessage = document.getElementById('loading-message');
 
         let app;
         let db;
         let auth;
-        let userId = null;
 
         // Sign in anonymously to get a unique user ID
         const signIn = async () => {
-             if (firebaseConfig.projectId === "your-project-id") {
-                console.error("Firebase is not configured. Please add your Firebase project's config details to the firebaseConfig variable in the code and reload the page.");
-                return;
-            }
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                if (initialAuthToken) {
+                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
                     await signInAnonymously(auth);
                 }
-                userId = auth.currentUser.uid;
                 // Once authenticated, start listening for queue changes
                 listenForQueueChanges();
             } catch (error) {
                 console.error("Error during authentication:", error);
+                // Additional instructions for the user to troubleshoot
+                console.warn(
+                    "If you are seeing a 'auth/configuration-not-found' error, please make sure you have enabled the 'Anonymous' provider in your Firebase Authentication settings."
+                );
             }
         };
 
@@ -113,71 +110,46 @@
 
             // Use onSnapshot to get real-time updates
             onSnapshot(q, (snapshot) => {
-                const queue = [];
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    queue.push({ id: doc.id, ...data });
-                });
-
-                renderQueue(queue);
+                loadingMessage.classList.add('hidden');
+                teacherViewQueue.innerHTML = '';
+                if (snapshot.empty) {
+                    teacherViewQueue.innerHTML = '<p class="text-gray-400 text-center py-8">The queue is empty. All clear!</p>';
+                } else {
+                    snapshot.forEach((doc) => {
+                        const request = doc.data();
+                        const requestElement = document.createElement('div');
+                        requestElement.className = 'flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-200';
+                        requestElement.innerHTML = `
+                            <div class="flex-grow">
+                                <p class="text-lg font-semibold text-gray-800">${request.firstName} ${request.lastName}</p>
+                                <p class="text-sm text-gray-500">${request.requestType}</p>
+                                <p class="text-xs text-gray-400 mt-1">User ID: ${request.userId}</p>
+                            </div>
+                            <button class="done-btn bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-5 rounded-full shadow transition-transform transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300" data-id="${doc.id}">
+                                Done
+                            </button>
+                        `;
+                        teacherViewQueue.appendChild(requestElement);
+                    });
+                }
             }, (error) => {
                 console.error("Error listening to queue changes:", error);
+                loadingMessage.textContent = 'Error loading queue.';
             });
         };
 
-        // Function to render the queue items
-        const renderQueue = (queue) => {
-            teacherViewQueue.innerHTML = ''; // Clear previous items
-
-            if (queue.length === 0) {
-                teacherViewQueue.innerHTML = `
-                    <div class="text-center p-6 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50">
-                        <p class="text-gray-500">The queue is currently empty.</p>
-                    </div>
-                `;
-                return;
+        teacherViewQueue.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('done-btn')) {
+                const requestId = event.target.dataset.id;
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/help-requests`, requestId);
+                    await deleteDoc(docRef);
+                    console.log(`Request ${requestId} cleared.`);
+                } catch (error) {
+                    console.error("Error clearing request:", error);
+                }
             }
-
-            queue.forEach((request, index) => {
-                const requestElement = document.createElement('div');
-                requestElement.className = "flex items-center justify-between p-4 rounded-xl shadow-sm bg-slate-50 border-l-4 border-slate-300 transition-all duration-300 transform hover:scale-[1.01]";
-                
-                requestElement.innerHTML = `
-                    <div class="flex-1 min-w-0">
-                        <h2 class="text-lg font-semibold text-gray-800">${index + 1}. ${request.firstName} ${request.lastName}</h2>
-                        <p class="text-sm text-gray-600 mt-1">Request: <span class="font-medium">${request.requestType}</span></p>
-                        <p class="text-xs text-gray-400 mt-1">User ID: ${request.userId}</p>
-                    </div>
-                    <button class="done-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-5 rounded-full shadow-md transition-transform transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-green-300 ml-4" data-id="${request.id}">
-                        Done
-                    </button>
-                `;
-                teacherViewQueue.appendChild(requestElement);
-            });
-
-            // Add event listeners for the new "Done" buttons
-            document.querySelectorAll('.done-btn').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const requestId = event.target.dataset.id;
-                    deleteRequest(requestId);
-                });
-            });
-        };
-
-        const deleteRequest = async (requestId) => {
-            if (!db) {
-                console.error("Database not initialized. Please configure Firebase.");
-                return;
-            }
-            try {
-                // Delete the document from the queue
-                const docRef = doc(db, `artifacts/${appId}/public/data/help-requests`, requestId);
-                await deleteDoc(docRef);
-                console.log("Request deleted successfully.");
-            } catch (error) {
-                console.error("Error deleting request:", error);
-            }
-        };
+        });
 
         // Start the app by signing in to Firebase
         signIn();
