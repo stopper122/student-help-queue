@@ -45,7 +45,14 @@
 
         // Global variables provided by the environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const firebaseConfig = {
+  apiKey: "AIzaSyBX96xDY5ThDAZn-SckmsnfynMnQjvUc2I",
+  authDomain: "helprequest-469c0.firebaseapp.com",
+  projectId: "helprequest-469c0",
+  storageBucket: "helprequest-469c0.firebasestorage.app",
+  messagingSenderId: "1092775554304",
+  appId: "1:1092775554304:web:e771c3ebac1e6ba4f597e5"
+};
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
         // UI Elements
