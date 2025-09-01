@@ -22,17 +22,16 @@
     <div class="container-card bg-white p-8 rounded-2xl shadow-xl space-y-8 mt-12">
 
         <!-- Header -->
-        <header class="text-center">
+        <header class="text-center mb-6">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Teacher Dashboard</h1>
-            <p class="text-sm text-gray-500 mt-2">Manage the student help queue in real time.</p>
+            <p class="text-sm text-gray-500 mt-2">All student requests appear here in real-time.</p>
         </header>
-
-        <!-- Teacher View Section -->
-        <div class="space-y-4">
-            <h2 class="text-2xl font-bold text-gray-700 text-center sm:text-left">Current Requests</h2>
-            <div id="teacher-view-queue" class="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                <p id="empty-queue-message" class="text-gray-500 text-center italic">The queue is currently empty.</p>
-                <!-- Queue items will be dynamically added here -->
+        
+        <!-- Teacher Queue View -->
+        <div id="teacher-view-queue" class="space-y-4">
+            <!-- Requests will be dynamically added here -->
+            <div class="text-center p-6 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50">
+                <p class="text-gray-500">The queue is currently empty.</p>
             </div>
         </div>
     </div>
@@ -42,9 +41,22 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global variables provided by the environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // =========================================================================
+        // IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION HERE
+        // =========================================================================
+        // 1. Go to your Firebase project settings.
+        // 2. Find the 'Your apps' section and click on the 'Web' app you created.
+        // 3. Copy the entire 'firebaseConfig' object and paste it below,
+        //    replacing the placeholder values.
+        // 
+        // Example:
+        // const firebaseConfig = {
+        //   apiKey: "AIzaSyC...",
+        //   authDomain: "your-project.firebaseapp.com",
+        //   ...
+        // };
+        // =========================================================================
         const firebaseConfig = {
   apiKey: "AIzaSyBX96xDY5ThDAZn-SckmsnfynMnQjvUc2I",
   authDomain: "helprequest-469c0.firebaseapp.com",
@@ -53,25 +65,33 @@
   messagingSenderId: "1092775554304",
   appId: "1:1092775554304:web:e771c3ebac1e6ba4f597e5"
 };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = null;
+
         // UI Elements
         const teacherViewQueue = document.getElementById('teacher-view-queue');
-        const emptyQueueMessage = document.getElementById('empty-queue-message');
 
-        // Initialize Firebase services
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        let app;
+        let db;
+        let auth;
+        let userId = null;
 
         // Sign in anonymously to get a unique user ID
         const signIn = async () => {
+             if (firebaseConfig.projectId === "your-project-id") {
+                console.error("Firebase is not configured. Please add your Firebase project's config details to the firebaseConfig variable in the code and reload the page.");
+                return;
+            }
             try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
                     await signInAnonymously(auth);
                 }
+                userId = auth.currentUser.uid;
                 // Once authenticated, start listening for queue changes
                 listenForQueueChanges();
             } catch (error) {
@@ -81,6 +101,10 @@
 
         // Listen to real-time updates from Firestore
         const listenForQueueChanges = () => {
+            if (!db) {
+                console.error("Database not initialized. Please configure Firebase.");
+                return;
+            }
             // Path to the shared public data collection
             const queueCollectionRef = collection(db, `artifacts/${appId}/public/data/help-requests`);
             
@@ -94,66 +118,66 @@
                     const data = doc.data();
                     queue.push({ id: doc.id, ...data });
                 });
-                
-                // Update the teacher's view with the full queue
-                renderTeacherView(queue);
+
+                renderQueue(queue);
             }, (error) => {
                 console.error("Error listening to queue changes:", error);
             });
         };
 
-        const renderTeacherView = (queue) => {
-            teacherViewQueue.innerHTML = ''; // Clear previous content
+        // Function to render the queue items
+        const renderQueue = (queue) => {
+            teacherViewQueue.innerHTML = ''; // Clear previous items
+
             if (queue.length === 0) {
-                teacherViewQueue.appendChild(emptyQueueMessage);
-                emptyQueueMessage.classList.remove('hidden');
-            } else {
-                emptyQueueMessage.classList.add('hidden');
-                queue.forEach((item, index) => {
-                    const queueItem = document.createElement('div');
-                    queueItem.className = 'p-3 my-2 bg-white rounded-lg shadow-sm border border-gray-100 flex items-center justify-between';
-                    queueItem.innerHTML = `
-                        <div class="flex items-center space-x-3">
-                            <span class="font-bold text-gray-700 text-lg">${index + 1}.</span>
-                            <div>
-                                <p class="font-semibold text-gray-800">${item.firstName} ${item.lastName}</p>
-                                <p class="text-sm text-gray-500">${item.requestType}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                          <button class="remove-request-btn bg-gray-200 text-gray-600 rounded-full h-8 w-8 flex items-center justify-center hover:bg-red-400 hover:text-white transition-colors duration-200" data-id="${item.id}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                          </button>
-                          <span class="text-xs text-gray-400 break-words w-20">User ID: ${item.userId}</span>
-                        </div>
-                    `;
-                    teacherViewQueue.appendChild(queueItem);
-                });
+                teacherViewQueue.innerHTML = `
+                    <div class="text-center p-6 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50">
+                        <p class="text-gray-500">The queue is currently empty.</p>
+                    </div>
+                `;
+                return;
             }
+
+            queue.forEach((request, index) => {
+                const requestElement = document.createElement('div');
+                requestElement.className = "flex items-center justify-between p-4 rounded-xl shadow-sm bg-slate-50 border-l-4 border-slate-300 transition-all duration-300 transform hover:scale-[1.01]";
+                
+                requestElement.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-lg font-semibold text-gray-800">${index + 1}. ${request.firstName} ${request.lastName}</h2>
+                        <p class="text-sm text-gray-600 mt-1">Request: <span class="font-medium">${request.requestType}</span></p>
+                        <p class="text-xs text-gray-400 mt-1">User ID: ${request.userId}</p>
+                    </div>
+                    <button class="done-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-5 rounded-full shadow-md transition-transform transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-green-300 ml-4" data-id="${request.id}">
+                        Done
+                    </button>
+                `;
+                teacherViewQueue.appendChild(requestElement);
+            });
+
+            // Add event listeners for the new "Done" buttons
+            document.querySelectorAll('.done-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const requestId = event.target.dataset.id;
+                    deleteRequest(requestId);
+                });
+            });
         };
 
-        const removeRequest = async (docId) => {
+        const deleteRequest = async (requestId) => {
+            if (!db) {
+                console.error("Database not initialized. Please configure Firebase.");
+                return;
+            }
             try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/help-requests`, docId);
+                // Delete the document from the queue
+                const docRef = doc(db, `artifacts/${appId}/public/data/help-requests`, requestId);
                 await deleteDoc(docRef);
-                console.log("Request removed by teacher successfully.");
+                console.log("Request deleted successfully.");
             } catch (error) {
-                console.error("Error removing request:", error);
+                console.error("Error deleting request:", error);
             }
         };
-        
-        // Event delegation for the teacher's remove buttons
-        teacherViewQueue.addEventListener('click', (e) => {
-            const btn = e.target.closest('.remove-request-btn');
-            if (btn) {
-                const docId = btn.dataset.id;
-                if (docId) {
-                    removeRequest(docId);
-                }
-            }
-        });
 
         // Start the app by signing in to Firebase
         signIn();

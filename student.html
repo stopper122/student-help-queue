@@ -59,9 +59,22 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global variables provided by the environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = {
+        // =========================================================================
+        // IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION HERE
+        // =========================================================================
+        // 1. Go to your Firebase project settings.
+        // 2. Find the 'Your apps' section and click on the 'Web' app you created.
+        // 3. Copy the entire 'firebaseConfig' object and paste it below,
+        //    replacing the placeholder values.
+        // 
+        // Example:
+        // const firebaseConfig = {
+        //   apiKey: "AIzaSyC...",
+        //   authDomain: "your-project.firebaseapp.com",
+        //   ...
+        // };
+        // =========================================================================
+       const firebaseConfig = {
   apiKey: "AIzaSyBX96xDY5ThDAZn-SckmsnfynMnQjvUc2I",
   authDomain: "helprequest-469c0.firebaseapp.com",
   projectId: "helprequest-469c0",
@@ -69,7 +82,9 @@
   messagingSenderId: "1092775554304",
   appId: "1:1092775554304:web:e771c3ebac1e6ba4f597e5"
 };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = null;
         
         // UI Elements
         const firstNameInput = document.getElementById('firstNameInput');
@@ -81,18 +96,23 @@
         const studentStatusSection = document.getElementById('student-status-section');
         const queueNumberElement = document.getElementById('queueNumber');
 
-        // Initialize Firebase services
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
+        let app;
+        let db;
+        let auth;
         let userId = null;
         let userHasRequest = false;
         let userRequestId = null;
 
         // Sign in anonymously to get a unique user ID
         const signIn = async () => {
-            try {
+            if (firebaseConfig.projectId === "your-project-id") {
+                console.error("Firebase is not configured. Please add your Firebase project's config details to the firebaseConfig variable in the code and reload the page.");
+                return;
+            }
+             try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
@@ -108,6 +128,10 @@
 
         // Listen to real-time updates from Firestore
         const listenForQueueChanges = () => {
+            if (!db) {
+                console.error("Database not initialized. Please configure Firebase.");
+                return;
+            }
             // Path to the shared public data collection
             const queueCollectionRef = collection(db, `artifacts/${appId}/public/data/help-requests`);
             
@@ -143,6 +167,10 @@
         };
 
         const submitRequest = async (type) => {
+            if (!db) {
+                console.error("Database not initialized. Please configure Firebase.");
+                return;
+            }
             const firstName = firstNameInput.value.trim();
             const lastName = lastNameInput.value.trim();
 
@@ -173,6 +201,10 @@
         };
 
         const cancelRequest = async () => {
+            if (!db) {
+                console.error("Database not initialized. Please configure Firebase.");
+                return;
+            }
             if (!userRequestId) {
                 console.error("No active request to cancel.");
                 return;
