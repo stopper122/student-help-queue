@@ -105,8 +105,9 @@
             // Path to the shared public data collection
             const queueCollectionRef = collection(db, `artifacts/${appId}/public/data/help-requests`);
             
-            // Create a query to order the queue by submission time
-            const q = query(queueCollectionRef, orderBy("timestamp"));
+            // NOTE: We are no longer using orderBy in the Firestore query for performance.
+            // The list will be sorted in the browser instead.
+            const q = query(queueCollectionRef);
 
             // Use onSnapshot to get real-time updates
             onSnapshot(q, (snapshot) => {
@@ -115,8 +116,16 @@
                 if (snapshot.empty) {
                     teacherViewQueue.innerHTML = '<p class="text-gray-400 text-center py-8">The queue is empty. All clear!</p>';
                 } else {
+                    const queue = [];
                     snapshot.forEach((doc) => {
-                        const request = doc.data();
+                        const data = doc.data();
+                        queue.push({ id: doc.id, ...data });
+                    });
+                    
+                    // Client-side sorting for a faster user experience
+                    queue.sort((a, b) => a.timestamp - b.timestamp);
+
+                    queue.forEach((request) => {
                         const requestElement = document.createElement('div');
                         requestElement.className = 'flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-200';
                         requestElement.innerHTML = `
@@ -125,7 +134,7 @@
                                 <p class="text-sm text-gray-500">${request.requestType}</p>
                                 <p class="text-xs text-gray-400 mt-1">User ID: ${request.userId}</p>
                             </div>
-                            <button class="done-btn bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-5 rounded-full shadow transition-transform transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300" data-id="${doc.id}">
+                            <button class="done-btn bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-5 rounded-full shadow transition-transform transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300" data-id="${request.id}">
                                 Done
                             </button>
                         `;
