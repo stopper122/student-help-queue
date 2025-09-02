@@ -135,8 +135,9 @@
             // Path to the shared public data collection
             const queueCollectionRef = collection(db, `artifacts/${appId}/public/data/help-requests`);
             
-            // Create a query to order the queue by submission time
-            const q = query(queueCollectionRef, orderBy("timestamp"));
+            // NOTE: We are no longer using orderBy in the Firestore query for performance.
+            // The list will be sorted in the browser instead.
+            const q = query(queueCollectionRef);
 
             // Use onSnapshot to get real-time updates
             onSnapshot(q, (snapshot) => {
@@ -145,6 +146,9 @@
                     const data = doc.data();
                     queue.push({ id: doc.id, ...data });
                 });
+                
+                // Client-side sorting for a faster user experience
+                queue.sort((a, b) => a.timestamp - b.timestamp);
 
                 // Check if the current user has a request in the queue
                 const userRequest = queue.find(req => req.userId === userId);
