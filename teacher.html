@@ -18,9 +18,14 @@
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl mt-12">
 
         <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Teacher Dashboard</h1>
-            <p class="text-sm text-gray-500 mt-2">Live queue of students needing assistance.</p>
+        <header class="text-center mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Teacher Dashboard</h1>
+                <p class="text-sm text-gray-500 mt-2">Live queue of students needing assistance.</p>
+            </div>
+            <button id="clearAllBtn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-5 rounded-full shadow transition-transform transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-red-300">
+                Clear All
+            </button>
         </header>
 
         <!-- Live Queue Section -->
@@ -37,7 +42,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // =========================================================================
         // IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION HERE
@@ -69,6 +74,7 @@
         // UI Elements
         const teacherViewQueue = document.getElementById('teacher-view-queue');
         const loadingMessage = document.getElementById('loading-message');
+        const clearAllBtn = document.getElementById('clearAllBtn');
 
         let app;
         let db;
@@ -147,6 +153,25 @@
             });
         };
 
+        const clearAllRequests = async () => {
+            if (!db) {
+                console.error("Database not initialized. Please configure Firebase.");
+                return;
+            }
+            try {
+                const queueCollectionRef = collection(db, `artifacts/${appId}/public/data/help-requests`);
+                const querySnapshot = await getDocs(queueCollectionRef);
+                const deletePromises = [];
+                querySnapshot.forEach((doc) => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                await Promise.all(deletePromises);
+                console.log("All requests cleared successfully.");
+            } catch (error) {
+                console.error("Error clearing all requests:", error);
+            }
+        };
+
         teacherViewQueue.addEventListener('click', async (event) => {
             if (event.target.classList.contains('done-btn')) {
                 const requestId = event.target.dataset.id;
@@ -159,6 +184,8 @@
                 }
             }
         });
+
+        clearAllBtn.addEventListener('click', clearAllRequests);
 
         // Start the app by signing in to Firebase
         signIn();
