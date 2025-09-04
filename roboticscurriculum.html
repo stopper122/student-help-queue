@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robotics Curriculum Outline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Calm Neutrals -->
+    <!-- Application Structure Plan: A single-page application with a sticky top navigation bar for quick and easy navigation between all major curriculum topics. Each lesson is presented as a distinct, scrollable section with a consistent visual style, featuring an introduction, key concepts, and a bulleted list of suggested activities. The content is organized thematically to provide a logical and user-friendly flow. This design was chosen to serve as a comprehensive, living document for the entire course, allowing for quick reference. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: All curriculum content -> Goal: Consolidate and Inform -> Presentation: Thematic sections with headings and text blocks -> Interaction: Navigation bar for quick jumps -> Justification: Provides a linear, easy-to-follow structure for the entire course material.
+        - Report Info: Suggested Activities -> Goal: Practice -> Presentation: Bulleted lists -> Interaction: Clickable checkboxes to track completion -> Justification: Presents a clear, concise list of hands-on activities for each lesson with an added interactive element for progress tracking.
+        - All content is presented in clear, readable sections. This design supports the educational flow without needing complex data visualizations. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            cursor: pointer;
+            transition: color 0.2s ease-in-out;
+        }
+        .activity-item.completed {
+            color: #a8a29e;
+            text-decoration: line-through;
+        }
+        .checkbox {
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #a8a29e;
+            border-radius: 0.25rem;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .activity-item.completed .checkbox {
+            background-color: #57534e;
+            border-color: #57534e;
+        }
+        .checkmark {
+            color: white;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .activity-item.completed .checkmark {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-stone-100 text-stone-800">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="text-2xl font-bold text-indigo-600">Robotics Curriculum</div>
+            <div class="hidden md:flex space-x-4">
+                <a href="#intro" class="text-stone-600 hover:text-indigo-600">Intro</a>
+                <a href="#drivetrain" class="text-stone-600 hover:text-indigo-600">Drivetrain</a>
+                <a href="#programming" class="text-stone-600 hover:text-indigo-600">Programming</a>
+                <a href="#variables" class="text-stone-600 hover:text-indigo-600">Variables</a>
+                <a href="#touch" class="text-stone-600 hover:text-indigo-600">Touch Sensors</a>
+                <a href="#ultrasonic" class="text-stone-600 hover:text-indigo-600">Ultrasonic</a>
+                <a href="#control" class="text-stone-600 hover:text-indigo-600">Control</a>
+                <a href="#final" class="text-stone-600 hover:text-indigo-600">Final Challenge</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-6 md:p-8">
+
+        <section id="intro" class="my-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-center mb-4 text-indigo-600">Robotics Curriculum Outline</h1>
+            <p class="text-lg text-stone-600 text-center max-w-3xl mx-auto mb-12">This is a complete outline of the robotics curriculum. It is a comprehensive guide to building, programming, and controlling robots using LEGO EV3 and RobotC.</p>
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-bold mb-4">Introduction to Robotics</h2>
+                <p class="text-stone-700">This lesson introduces students to the core concepts of robotics, the "sense, think, act" process, and the Robot Virtual Worlds platform as a safe way to get started.</p>
+                <h3 class="text-xl font-semibold mt-4 mb-2">Suggested Activities</h3>
+                <ul class="list-none space-y-2 text-stone-700">
+                    <li>
+                        <div class="activity-item" data-activity-id="intro-1">
+                            <div class="checkbox"><span class="checkmark">&#10003;</span></div>
+                            <span>Build a Basic Robot: Students will follow instructions to build a simple two-wheeled robot with a single sensor.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="drivetrain" class="my-16">
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-bold mb-4">Drivetrain & Movement</h2>
+                <p class="text-stone-700">Students learn about the robot's drivetrain and how to make it move. The lesson covers the `motor[]` and `wait1Msec()` commands to control speed, direction, and duration of movement.</p>
+                <h3 class="text-xl font-semibold mt-4 mb-2">Suggested Activities</h3>
+                <ul class="list-none space-y-2 text-stone-700">
+                    <li>
+                        <div class="activity-item" data-activity-id="drivetrain-1">
+                            <div class="checkbox"><span class="checkmark">&#10003;</span></div>
+                            <span>The Straight Shot: Program the robot to drive forward for a set time and then stop.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="activity-item" data-activity-id="drivetrain-2">
+                            <div class="checkbox"><span class="checkmark">&#10003;</span></div>
+                            <span>Square Dance: Program the robot to drive in a perfect square, reinforcing the need for precise timing.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="activity-item" data-activity-id="drivetrain-3">
+                            <div class="checkbox"><span class="checkmark">&#10003;</span></div>
+                            <span>The U-Turn: Program the robot to make a 180-degree turn.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="programming" class="my-16">
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-bold mb-4">Programming Structure</h2>
+                <p class="text-stone-700">This lesson focuses on the foundational rules of writing clean, readable code, including proper use of whitespace, comments, semicolons, and paired punctuation like `()`, `{}`, and `[]`.</p>
+                <h3 class="text-xl font-semibold mt-4 mb-2">Suggested Activities</h3>
+                <ul class="list-none space-y-2 text-stone-700">
+                    <li>
+                        <div class="activity-item" data-activity-id="programming-1">
+                            <div class="checkbox"><span class="checkmark">&#10003;</span></div>
+                            <span>Code Cleanup: Correct a poorly formatted and un-commented piece of code to improve readability.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="variables" class="my-16">
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-bold mb-4">Variables & Data Storage</h2>
+                <p class="text-stone-700">Students are introduced to variables as containers for data. The lesson covers different data types, including `int`, `float`, `double`, `string`, and `boolean`, and shows how to use them to store information.</p>
+                <h3 class="text-xl font-semibold mt-4 mb-2">Suggested Activities</h3>
+                <ul class="list-none space-y-2 text-stone-700">
+                    <li>
+                        <div class="activity-item" data-activity-id="variables-1">
+                            <div class="checkbox"><span class="checkmark">&#10003;</span></div>
+                            <span>Speed Control Interface: Use a variable to store the robot's motor speed and control it with buttons on the EV3 brick.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="touch" class="my-16">
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-bold mb-4">Touch Sensors</h2>
+                <p class="text-stone-700">This lesson introduces the touch sensor as a simple **digital sensor** with two states. Students learn how to read a `0` or `1` value to trigger actions based on physical contact.</p>
+                <h3 class="text-xl font-semibold mt-4 mb-2">Suggested Activities</h3>
+                <ul class="list-none space-y-2 text-stone-700">
+                    <li>
+                        <div class="activity-item" data-activity-id="touch-1">
+                            <div class="checkbox"><span class="checkmark">&#10003;</span></div>
+                            <span>The Bumper Bot: Program the robot to drive forward until its touch sensor is pressed, then back up and turn before driving forward again.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="ultrasonic" class="my-16">
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-bold mb-4">Ultrasonic Sensors</h2>
+                <p class="text-stone-700">Students learn about the ultrasonic sensor as an **analog sensor**. They will see how it uses echolocation to measure distance and how to use the `SensorValue[]` command to read its data in both metric and imperial units.</p>
+                <h3 class="text-xl font-semibold mt-4 mb-2">Suggested Activities</h3>
+                <ul class="list-none space-y-2 text-stone-700">
+                    <li>
+                        <div class="activity-item" data-activity-id="ultrasonic-1">
+                            <div class="checkbox"><span class="checkmark">&#10003;</span></div>
+                            <span>The Wall Follower: Program the robot to drive until it detects a wall at a specific distance and then stop.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="control" class="my-16">
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-bold mb-4">Control Statements</h2>
+                <p class="text-stone-700">This lesson gives students the tools to make their programs more dynamic. It covers conditional statements (`if`, `else`, `else if`) for making decisions and repetitive statements (`while`, `for`) for repeating tasks.</p>
+                <h3 class="text-xl font-semibold mt-4 mb-2">Suggested Activities</h3>
+                <ul class="list-none space-y-2 text-stone-700">
+                    <li>
+                        <div class="activity-item" data-activity-id="control-1">
+                            <div class="checkbox"><span class="checkmark">&#10003;</span></div>
+                            <span>The Simple Maze Runner: Combine loops and conditional statements to program a robot to navigate a simple maze autonomously.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="final" class="my-16">
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-bold mb-4">Putting it All Together</h2>
+                <p class="text-stone-700">This final lesson is a capstone challenge that requires students to apply all the concepts they've learned throughout the course to solve a more complex problem.</p>
+                <h3 class="text-xl font-semibold mt-4 mb-2">Suggested Activities</h3>
+                <ul class="list-none space-y-2 text-stone-700">
+                    <li>
+                        <div class="activity-item" data-activity-id="final-1">
+                            <div class="checkbox"><span class="checkmark">&#10003;</span></div>
+                            <span>The Grand Challenge: Program the robot to navigate a complex obstacle course, complete a specific task, or compete in a timed challenge with other robots.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white mt-16 border-t">
+        <div class="container mx-auto px-6 py-4 text-center text-stone-500">
+            <p>&copy; Robotics Curriculum. Happy building!</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const activities = document.querySelectorAll('.activity-item');
+            const completedActivities = JSON.parse(localStorage.getItem('completedActivities')) || {};
+
+            function saveState() {
+                localStorage.setItem('completedActivities', JSON.stringify(completedActivities));
+            }
+
+            activities.forEach(item => {
+                const activityId = item.dataset.activityId;
+                if (completedActivities[activityId]) {
+                    item.classList.add('completed');
+                }
+
+                item.addEventListener('click', function() {
+                    this.classList.toggle('completed');
+                    completedActivities[activityId] = this.classList.contains('completed');
+                    saveState();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
