@@ -129,7 +129,16 @@
                     });
                     
                     // Client-side sorting for a faster user experience
-                    queue.sort((a, b) => a.timestamp - b.timestamp);
+                    // Prioritize "Help" requests over "Program Check" requests
+                    queue.sort((a, b) => {
+                        if (a.requestType === 'Help' && b.requestType !== 'Help') {
+                            return -1;
+                        }
+                        if (a.requestType !== 'Help' && b.requestType === 'Help') {
+                            return 1;
+                        }
+                        return a.timestamp - b.timestamp;
+                    });
 
                     queue.forEach((request) => {
                         const requestElement = document.createElement('div');
